@@ -1,0 +1,40 @@
+name: Update ski scores
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 6 * * *'  # 06:15 UTC daily (08:15 Madrid time)
+
+permissions:
+  contents: write
+
+jobs:
+  update-ski-scores:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pipeline
+        run: python -m src.pipeline
+
+      - name: Commit updated CSVs if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ski_data.csv data/ski_score_historical.csv
+          git diff --staged --quiet || git commit -m "chore: refresh ski scores [skip ci]"
+
+      - name: Push changes
+        run: git push
